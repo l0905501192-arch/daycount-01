@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> </title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;600&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #4a5d4e;
+            --accent-color: #a8d5ba;
+        }
+
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f4f4f4; /* 產生器背景 */
+            font-family: 'Montserrat', 'Noto Sans TC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- 直式插件樣式 --- */
+        .widget-card {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            width: 240px;
+            padding: 45px 20px;
+            border-radius: 35px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+            border: 1px solid rgba(0,0,0,0.05);
+            box-sizing: border-box;
+            position: relative;
+            z-index: 1;
+        }
+
+        .icon { font-size: 3rem; margin-bottom: 15px; display: block; }
+        .title-text { font-size: 1.1rem; font-weight: 500; letter-spacing: 2px; margin-bottom: 5px; }
+        
+        .days-box { margin: 20px 0; }
+        .num { font-size: 5rem; font-weight: 700; color: var(--accent-color); line-height: 1; }
+        .unit { font-size: 1rem; font-weight: 500; margin-top: 10px; letter-spacing: 4px; opacity: 0.8; }
+        
+        .footer-date { 
+            margin-top: 30px; 
+            font-size: 0.75rem; 
+            opacity: 0.4; 
+            border-top: 1px dashed rgba(0,0,0,0.1);
+            padding-top: 20px;
+            letter-spacing: 1px;
+        }
+
+        /* --- 生成器面板 --- */
+        #generator {
+            margin-top: 30px;
+            background: white;
+            padding: 25px;
+            border-radius: 24px;
+            width: 300px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            z-index: 10;
+        }
+        h3 { margin: 0 0 15px 0; font-size: 1.1rem; color: #333; text-align: center; }
+        .field { margin-bottom: 12px; text-align: left; }
+        label { display: block; font-size: 11px; color: #999; margin-bottom: 4px; font-weight: 600; }
+        input { width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 10px; box-sizing: border-box; outline: none; font-family: inherit; }
+        .colors { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+        .btn { 
+            width: 100%; padding: 12px; background: #4a5d4e; color: white; 
+            border: none; border-radius: 12px; cursor: pointer; font-weight: 600; margin-top: 15px;
+        }
+        #msg { color: #81c784; font-size: 12px; text-align: center; margin-top: 10px; display: none; }
+
+        /* Widget 模式：當偵測到網址參數時，自動套用此樣式隱藏面板 */
+        body.widget-mode #generator { display: none; }
+        body.widget-mode { background: transparent !important; }
+    </style>
+</head>
+<body>
+
+    <div class="widget-card" id="card">
+        <span class="icon" id="v-icon">🌿</span>
+        <div class="title-text" id="v-title"> </div>
+        
+        <div class="days-box">
+            <div class="num" id="v-num">0</div>
+            <div class="unit" id="v-unit">已度過</div>
+        </div>
+
+        <div class="footer-date">
+            START: <span id="v-date"> </span>
+        </div>
+    </div>
+
+    <div id="generator">
+        <h3>直式計數器配置</h3>
+        <div class="field"><label>圖標 Emoji</label><input type="text" id="in-i" value="🌿" oninput="preview()"></div>
+        <div class="field"><label>標題文字</label><input type="text" id="in-t" value="相遇的日子" oninput="preview()"></div>
+        <div class="field"><label>開始日期</label><input type="date" id="in-d" value="2026-01-24" oninput="preview()"></div>
+        <div class="colors">
+            <div class="field"><label>數字色</label><input type="color" id="in-a" value="#a8d5ba" oninput="preview()"></div>
+            <div class="field"><label>文字色</label><input type="color" id="in-tx" value="#4a5d4e" oninput="preview()"></div>
+            <div class="field"><label>背景色</label><input type="color" id="in-bg" value="#ffffff" oninput="preview()"></div>
+        </div>
+        <button class="btn" onclick="copyURL()">複製專屬網址</button>
+        <div id="msg">✓ 網址已複製</div>
+    </div>
+
+    <script>
+        function getParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                i: urlParams.get('i'), t: urlParams.get('t'), d: urlParams.get('d'),
+                a: urlParams.get('a'), tx: urlParams.get('tx'), bg: urlParams.get('bg')
+            };
+        }
+
+        function update(cfg) {
+            const displayTitle = cfg.t || "重要日子";
+            document.getElementById('v-icon').innerText = cfg.i || "🌿";
+            document.getElementById('v-title').innerText = displayTitle;
+            document.getElementById('v-date').innerText = (cfg.d || "2026-01-24").replace(/-/g, '.');
+            
+            // 動態更新瀏覽器標籤標題，解決顯示 "-" 的問題
+            document.title = displayTitle;
+
+            const start = new Date(cfg.d || "2026-01-24");
+            const now = new Date();
+            now.setHours(0,0,0,0); start.setHours(0,0,0,0);
+            const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+            
+            const numEl = document.getElementById('v-num');
+            const unitEl = document.getElementById('v-unit');
+            if (diff >= 0) {
+                numEl.innerText = diff + 1; 
+                unitEl.innerText = "已度過";
+            } else {
+                numEl.innerText = Math.abs(diff); 
+                unitEl.innerText = "倒數中";
+            }
+
+            document.documentElement.style.setProperty('--accent-color', cfg.a || "#a8d5ba");
+            document.documentElement.style.setProperty('--text-color', cfg.tx || "#4a5d4e");
+            document.documentElement.style.setProperty('--bg-color', cfg.bg || "#ffffff");
+        }
+
+        function preview() {
+            const cfg = {
+                i: document.getElementById('in-i').value,
+                t: document.getElementById('in-t').value,
+                d: document.getElementById('in-d').value,
+                a: document.getElementById('in-a').value,
+                tx: document.getElementById('in-tx').value,
+                bg: document.getElementById('in-bg').value
+            };
+            update(cfg);
+        }
+
+        function copyURL() {
+            const i = encodeURIComponent(document.getElementById('in-i').value);
+            const t = encodeURIComponent(document.getElementById('in-t').value);
+            const d = document.getElementById('in-d').value;
+            const a = encodeURIComponent(document.getElementById('in-a').value);
+            const tx = encodeURIComponent(document.getElementById('in-tx').value);
+            const bg = encodeURIComponent(document.getElementById('in-bg').value);
+            
+            const baseUrl = window.location.href.split('?')[0];
+            const finalUrl = `${baseUrl}?i=${i}&t=${t}&d=${d}&a=${a}&tx=${tx}&bg=${bg}`;
+            
+            const textArea = document.createElement("textarea");
+            textArea.value = finalUrl;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            
+            const msg = document.getElementById('msg');
+            msg.style.display = 'block';
+            setTimeout(() => msg.style.display = 'none', 3000);
+        }
+
+        const params = getParams();
+        // 如果偵測到 URL 有參數，就進入 widget 模式（隱藏產生器）
+        if (params.i || params.t || params.d) {
+            document.body.classList.add('widget-mode');
+            update(params);
+        } else {
+            preview();
+        }
+    </script>
+</body>
+</html>
